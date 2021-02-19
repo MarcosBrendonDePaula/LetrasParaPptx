@@ -57,7 +57,7 @@ def createPptx(vector,name):
     pass
     fname = random.randint(0,8000)
     local = "public/pptx"
-    prs.save(str(pathlib.Path(__file__).parent.absolute())+"/"+str.format("{0}/{1}.pptx",local,str(fname)+"_"+name))
+    prs.save("./"+str.format("{0}/{1}.pptx",local,str(fname)+"_"+name))
     return (local,str(fname)+"_"+name)
 
 
@@ -69,7 +69,7 @@ def timer(fname):
     minutos = 1
     time.sleep(60*minutos)
     print("Removido:",fname)
-    os.remove(str(pathlib.Path(__file__).parent.absolute())+"/public/pptx/{fname}.pptx".format(fname=fname))
+    os.remove("./public/pptx/{fname}.pptx".format(fname=fname))
 
 @app.route("/gen",methods=['POST'])
 def GenPptx():
