@@ -1,0 +1,36 @@
+.Manga_Block {
+    width: 31%;
+    height: 400px;
+}
+.isSelected{
+    box-shadow:
+    1px 1px #939aa0,
+    2px 2px #939aa0,
+    6px 6px #939aa0;
+    -webkit-transform: translateX(-3px);
+    transform: translateX(-3px);
+}
+.dinamic_font{
+    font-size: 30px;
+    font-size: 1.2em;
+}
+
+.Manga_Block:hover {
+    background-color: aqua;
+}
+
+.Selected .Manga_Block:hover{
+    background-color: aqua;
+}
+
+.Selected .Manga_Block{
+    width: 23%;
+    height: 400px;
+}
+.ResultsView .Manga_Block {
+    height: 500px;
+}
+.imgsize {
+    width: 100%;
+    height: 60%;
+}
