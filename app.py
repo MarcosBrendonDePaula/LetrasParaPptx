@@ -18,8 +18,6 @@ headers.update(
     }
 )
 
-dlg = None
-
 def loadPage(url=""):
     page = session.get(url, headers=headers)
     return page.text
@@ -39,7 +37,7 @@ def getLetra(html):
 
 def createPptx(vector,name):
     prs = Presentation()
-    left = top = width = height = Inches(2)
+    left = top = width = height = Inches(1)
     lyt=prs.slide_layouts[0] # choosing a slide layout
     slide = prs.slides.add_slide(lyt) # adding a slide
     title = slide.shapes.title # getTitle
