@@ -54,21 +54,21 @@ def createPptx(vector,name):
             pass
     pass
     fname = random.randint(0,8000)
-    file = open(str.format("{0}.pptx",str(fname)+"_"+str(name).replace(" ","_")),"wb")
+    file = open(str.format("public/pptx/{0}.pptx",str(fname)+"_"+str(name).replace(" ","_")),"wb")
     prs.save(file)
     file.close()
-    return ("public/pptx",str(fname)+"_"+str(name).replace(" ","_"))
+    return ("pptx",str(fname)+"_"+str(name).replace(" ","_"))
 
 
 
 from flask import Flask,jsonify,render_template,request,redirect,send_file
-app = Flask('flaskapp', static_url_path='/', static_folder='/')
+app = Flask('flaskapp', static_url_path='/', static_folder='public')
 
 def timer(fname):
     minutos = 1
     time.sleep(60*minutos)
     print("Removido:",fname)
-    os.remove("{fname}.pptx".format(fname=fname))
+    os.remove("public/pptx/{fname}.pptx".format(fname=fname))
 
 @app.route("/gen",methods=['POST'])
 def GenPptx():
@@ -77,7 +77,7 @@ def GenPptx():
         return redirect("/")
     pptx = createPptx(dados[0],dados[1])
     thread.Thread(target=timer,args=(pptx[1],)).start()
-    return redirect("{file}.pptx".format(file=pptx[1]))
+    return redirect("pptx/{file}.pptx".format(file=pptx[1]))
 
 @app.route("/",methods=['GET'])
 def index():
