@@ -54,9 +54,10 @@ def createPptx(vector,name):
             pass
     pass
     fname = random.randint(0,8000)
-    local = "public/pptx"
-    prs.save(str.format("{0}/{1}.pptx",local,str(fname)+"_"+name))
-    return (local,str(fname)+"_"+name)
+    file = open(str.format("public/pptx/{0}.pptx",str(fname)+"_"+name),"wb")
+    prs.save(file)
+    file.close()
+    return ("public/pptx",str(fname)+"_"+name)
 
 
 
