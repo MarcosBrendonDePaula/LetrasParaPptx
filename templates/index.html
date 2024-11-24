@@ -1,29 +1,517 @@
-<html>
-	<head>
-		<meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	    <link rel="stylesheet" type="text/css" href="/css/bootstrap.css">
-		<script src="/js/jquery.min.js"></script>
-		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script> -->
-        <script src="/js/bootstrap.min.js" defer></script>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de PPTX para Letras</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Presentation Mode Container -->
+    <div id="presentationMode" class="fixed inset-0 bg-black hidden z-50">
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div id="slideContent" class="w-full h-full flex items-center justify-center text-center p-12">
+                <!-- Slide content will be inserted here -->
+            </div>
+        </div>
+        <div class="absolute bottom-4 right-4 text-white text-sm opacity-50">
+            Use ← → keys to navigate | ESC to exit
+        </div>
+    </div>
 
-        <title>PPTX!</title>
-	</head>
-	<body>
-		<div class="container">
-			<form action="/gen" method="POST">
-				
-				<div class="d-flex justify-content-center align-items-center flex-wrap" style="height: 100vh;">
-					<div style="width: 10%;"><span>LETRAS LINK<span></div>
-					<div style="width: 60%;">
-						<input style="width: 100%;" name="link" type="text" class="link">
-					</div>
-					<div style="width: 20%;">
-						<button class="button">Download</button>
-					</div>
-				</div>
-			</form>
-		</div>
-	</body>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Gerador de Apresentações para Letras</h1>
+            <p class="text-lg text-gray-600">Cole o link da letra e personalize sua apresentação</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 lg:p-8">
+            <form id="pptxForm" action="/gen" method="POST" class="space-y-6">
+                <!-- Link Input -->
+                <div>
+                    <label for="link" class="form-label">Link da Letra</label>
+                    <div class="mt-1 flex rounded-md shadow-sm">
+                        <input type="text" id="link" name="link" 
+                               class="form-input flex-1 rounded-r-none"
+                               placeholder="Cole o link da letra aqui" required>
+                        <button type="button" id="previewBtn" 
+                                class="btn-secondary rounded-l-none border-l-0 flex items-center">
+                            <i class="bi bi-eye mr-2"></i> Visualizar
+                        </button>
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">Cole o link da letra do site Letras.mus.br</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Preview Section -->
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Prévia</h3>
+                            <button type="button" id="presentationBtn" class="btn-secondary hidden">
+                                <i class="bi bi-fullscreen mr-2"></i> Modo Apresentação (F11)
+                            </button>
+                        </div>
+                        <div id="previewBox" class="preview-container h-96 overflow-y-auto bg-gray-50 rounded-lg p-6 border-2 border-dashed border-gray-200">
+                            <div class="text-gray-500 text-center">Prévia da letra aparecerá aqui...</div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Section -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900">Configurações</h3>
+                        
+                        <!-- Font Settings -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="fontSize" class="form-label">Tamanho da Fonte</label>
+                                <select id="fontSize" name="fontSize" class="form-select">
+                                    <option value="28">Pequeno (28pt)</option>
+                                    <option value="34" selected>Médio (34pt)</option>
+                                    <option value="40">Grande (40pt)</option>
+                                    <option value="48">Extra Grande (48pt)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="titleFontSize" class="form-label">Tamanho da Fonte do Título</label>
+                                <select id="titleFontSize" name="titleFontSize" class="form-select">
+                                    <option value="44" selected>Normal (44pt)</option>
+                                    <option value="52">Grande (52pt)</option>
+                                    <option value="60">Extra Grande (60pt)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="fontFamily" class="form-label">Fonte</label>
+                                <select id="fontFamily" name="fontFamily" class="form-select">
+                                    <option value="Calibri" selected>Calibri</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Tahoma">Tahoma</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Layout Settings -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="alignment" class="form-label">Alinhamento</label>
+                                <select id="alignment" name="alignment" class="form-select">
+                                    <option value="left">Esquerda</option>
+                                    <option value="center" selected>Centro</option>
+                                    <option value="right">Direita</option>
+                                    <option value="justify">Justificado</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="verseSpacing" class="form-label">Espaçamento entre Versos</label>
+                                <select id="verseSpacing" name="verseSpacing" class="form-select">
+                                    <option value="compact">Compacto</option>
+                                    <option value="normal" selected>Normal</option>
+                                    <option value="relaxed">Relaxado</option>
+                                    <option value="spacious">Espaçoso</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Color Settings -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="backgroundColor" class="form-label">Cor de Fundo</label>
+                                <div class="mt-1 flex">
+                                    <input type="color" id="backgroundColor" name="backgroundColor" 
+                                           value="#FFFFFF" class="form-input w-full">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="textColor" class="form-label">Cor do Texto</label>
+                                <div class="mt-1 flex">
+                                    <input type="color" id="textColor" name="textColor" 
+                                           value="#000000" class="form-input w-full">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide Settings -->
+                        <div class="space-y-4">
+                            <div>
+                                <label for="titleSlideStyle" class="form-label">Estilo do Slide de Título</label>
+                                <select id="titleSlideStyle" name="titleSlideStyle" class="form-select">
+                                    <option value="simple" selected>Simples - Apenas Título</option>
+                                    <option value="withArtist">Com Nome do Artista</option>
+                                    <option value="full">Completo - Título, Artista e Data</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="transition" class="form-label">Transição entre Slides</label>
+                                <select id="transition" name="transition" class="form-select">
+                                    <option value="none" selected>Nenhuma</option>
+                                    <option value="fade">Desvanecer</option>
+                                    <option value="push">Empurrar</option>
+                                    <option value="wipe">Limpar</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button type="submit" class="btn-primary w-full">
+                        <i class="bi bi-file-earmark-ppt mr-2"></i> Gerar Apresentação
+                    </button>
+                </div>
+            </form>
+
+            <div id="loadingIndicator" class="hidden">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+                    <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                        <div class="loading-spinner w-12 h-12 mx-auto mb-4"></div>
+                        <p class="text-gray-900">Gerando sua apresentação...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const form = $('#pptxForm');
+            const loadingIndicator = $('#loadingIndicator');
+            const previewBtn = $('#previewBtn');
+            const previewBox = $('#previewBox');
+            const presentationBtn = $('#presentationBtn');
+            const presentationMode = $('#presentationMode');
+            const slideContent = $('#slideContent');
+            let currentPreview = null;
+            let currentSlideIndex = 0;
+            let slides = [];
+            let isFullscreen = false;
+
+            // Function to update preview styling
+            function updatePreviewStyles() {
+                if (!currentPreview) return;
+
+                const config = {
+                    fontSize: $('#fontSize').val(),
+                    backgroundColor: $('#backgroundColor').val(),
+                    textColor: $('#textColor').val(),
+                    alignment: $('#alignment').val(),
+                    verseSpacing: $('#verseSpacing').val(),
+                    fontFamily: $('#fontFamily').val()
+                };
+
+                // Update preview title
+                $('.preview-title').css({
+                    'color': config.textColor,
+                    'font-family': config.fontFamily
+                });
+
+                // Update preview verses
+                $('.preview-verse').css({
+                    'background-color': config.backgroundColor,
+                    'text-align': config.alignment
+                });
+
+                // Update preview lines
+                $('.preview-line').css({
+                    'color': config.textColor,
+                    'font-family': config.fontFamily,
+                    'font-size': `${parseInt(config.fontSize) / 2}px`
+                });
+
+                // Update verse spacing
+                const spacingMap = {
+                    'compact': '1',
+                    'normal': '1.5',
+                    'relaxed': '2',
+                    'spacious': '2.5'
+                };
+                $('.preview-line').css('line-height', spacingMap[config.verseSpacing]);
+
+                // Update presentation mode if active
+                if (isFullscreen) {
+                    updateSlide(currentSlideIndex);
+                }
+            }
+
+            // Function to handle file download
+            function downloadFile(blob, filename) {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            }
+
+            // Handle form submission
+            form.on('submit', function(e) {
+                e.preventDefault();
+                const link = $('#link').val();
+                if (!link.includes('letras.')) {
+                    alert('Por favor, insira um link válido do site letras.com');
+                    return false;
+                }
+                
+                loadingIndicator.removeClass('hidden');
+                
+                // Create form data
+                const formData = new FormData(form[0]);
+                
+                // Use XMLHttpRequest to handle binary data
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/gen', true);
+                xhr.responseType = 'blob';
+                
+                xhr.onload = function() {
+                    loadingIndicator.addClass('hidden');
+                    
+                    if (xhr.status === 200) {
+                        // Get filename from response headers if available
+                        const disposition = xhr.getResponseHeader('Content-Disposition');
+                        let filename = 'presentation.pptx';
+                        if (disposition && disposition.indexOf('filename') !== -1) {
+                            filename = disposition.split('filename=')[1].replace(/['"]/g, '');
+                        }
+                        
+                        // Create blob and download
+                        const blob = new Blob([xhr.response], {
+                            type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                        });
+                        downloadFile(blob, filename);
+                    } else {
+                        // Handle error
+                        const reader = new FileReader();
+                        reader.onload = function() {
+                            try {
+                                const error = JSON.parse(this.result);
+                                alert(error.error || 'Erro ao gerar apresentação');
+                            } catch (e) {
+                                alert('Erro ao gerar apresentação');
+                            }
+                        };
+                        reader.readAsText(xhr.response);
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    loadingIndicator.addClass('hidden');
+                    alert('Erro ao gerar apresentação. Por favor, tente novamente.');
+                };
+                
+                xhr.send(formData);
+            });
+
+            // Presentation mode functions
+            function prepareSlides() {
+                slides = [];
+                // Add title slide
+                slides.push({
+                    type: 'title',
+                    content: currentPreview.lyrics.title,
+                    artist: currentPreview.lyrics.artist
+                });
+                // Add verse slides
+                currentPreview.lyrics.verses.forEach(verse => {
+                    slides.push({
+                        type: 'verse',
+                        content: verse
+                    });
+                });
+            }
+
+            function updateSlide(index) {
+                const config = {
+                    fontSize: $('#fontSize').val(),
+                    backgroundColor: $('#backgroundColor').val(),
+                    textColor: $('#textColor').val(),
+                    alignment: $('#alignment').val(),
+                    verseSpacing: $('#verseSpacing').val(),
+                    fontFamily: $('#fontFamily').val()
+                };
+
+                const slide = slides[index];
+                let html = '';
+
+                if (slide.type === 'title') {
+                    html = `
+                        <div class="slide-content" style="
+                            color: ${config.textColor};
+                            font-family: ${config.fontFamily};
+                            text-align: ${config.alignment};
+                            background-color: ${config.backgroundColor};
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                        ">
+                            <h1 style="font-size: ${parseInt(config.fontSize) * 1.5}px; margin-bottom: 1rem;">
+                                ${slide.content}
+                            </h1>
+                            ${slide.artist ? `<h2 style="font-size: ${parseInt(config.fontSize)}px;">${slide.artist}</h2>` : ''}
+                        </div>
+                    `;
+                } else {
+                    html = `
+                        <div class="slide-content" style="
+                            color: ${config.textColor};
+                            font-family: ${config.fontFamily};
+                            text-align: ${config.alignment};
+                            background-color: ${config.backgroundColor};
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                        ">
+                            ${slide.content.map(line => 
+                                `<p style="
+                                    font-size: ${config.fontSize}px;
+                                    line-height: ${config.verseSpacing === 'compact' ? '1.2' : '1.5'};
+                                    margin: 0.5rem 0;
+                                ">${line}</p>`
+                            ).join('')}
+                        </div>
+                    `;
+                }
+
+                slideContent.html(html);
+            }
+
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    presentationMode.get(0).requestFullscreen();
+                    isFullscreen = true;
+                } else {
+                    document.exitFullscreen();
+                    isFullscreen = false;
+                }
+            }
+
+            // Handle preview button click
+            previewBtn.on('click', function() {
+                const link = $('#link').val();
+                if (!link) {
+                    alert('Por favor, insira um link da letra primeiro.');
+                    return;
+                }
+                if (!link.includes('letras.')) {
+                    alert('Por favor, insira um link válido do site letras.*');
+                    return;
+                }
+
+                previewBox.html('<div class="flex justify-center items-center h-full"><div class="loading-spinner w-8 h-8"></div></div>');
+
+                // Get current config
+                const config = {
+                    fontSize: $('#fontSize').val(),
+                    backgroundColor: $('#backgroundColor').val(),
+                    textColor: $('#textColor').val(),
+                    alignment: $('#alignment').val(),
+                    verseSpacing: $('#verseSpacing').val(),
+                    fontFamily: $('#fontFamily').val()
+                };
+
+                // Make AJAX call to preview endpoint
+                $.ajax({
+                    url: '/preview',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ 
+                        link: link,
+                        config: config
+                    }),
+                    success: function(response) {
+                        currentPreview = response;
+                        let previewHtml = `<h3 class="preview-title text-xl font-bold mb-4">${response.lyrics.title}</h3>`;
+                        
+                        response.lyrics.verses.forEach(verse => {
+                            previewHtml += '<div class="preview-verse">';
+                            verse.forEach(line => {
+                                previewHtml += `<p class="preview-line">${line}</p>`;
+                            });
+                            previewHtml += '</div>';
+                        });
+
+                        previewBox.html(previewHtml);
+                        updatePreviewStyles();
+                        presentationBtn.removeClass('hidden');
+                        prepareSlides();
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Erro ao carregar prévia';
+                        if (xhr.responseJSON && xhr.responseJSON.error) {
+                            errorMessage = xhr.responseJSON.error;
+                        }
+                        previewBox.html(`<div class="bg-red-50 text-red-500 p-4 rounded-lg">${errorMessage}</div>`);
+                        presentationBtn.addClass('hidden');
+                    }
+                });
+            });
+
+            // Handle presentation mode
+            presentationBtn.on('click', function() {
+                if (!currentPreview) return;
+                currentSlideIndex = 0;
+                presentationMode.removeClass('hidden');
+                updateSlide(currentSlideIndex);
+                toggleFullscreen();
+            });
+
+            // Handle keyboard navigation
+            $(document).on('keydown', function(e) {
+                if (!isFullscreen) {
+                    if (e.key === 'F11') {
+                        e.preventDefault();
+                        presentationBtn.click();
+                    }
+                    return;
+                }
+
+                switch(e.key) {
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault();
+                        if (currentSlideIndex < slides.length - 1) {
+                            currentSlideIndex++;
+                            updateSlide(currentSlideIndex);
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        if (currentSlideIndex > 0) {
+                            currentSlideIndex--;
+                            updateSlide(currentSlideIndex);
+                        }
+                        break;
+                    case 'Escape':
+                        presentationMode.addClass('hidden');
+                        break;
+                }
+            });
+
+            // Handle fullscreen change
+            $(document).on('fullscreenchange', function() {
+                if (!document.fullscreenElement) {
+                    presentationMode.addClass('hidden');
+                    isFullscreen = false;
+                }
+            });
+
+            // Handle configuration changes
+            $('select, input[type="color"]').on('change', updatePreviewStyles);
+        });
+    </script>
+</body>
 </html>

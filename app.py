@@ -1,88 +1,102 @@
-import pathlib
-import requests
+from flask import Flask, jsonify, render_template, request, redirect, send_file
+from app.utils.scraper import LyricsScraper
+from app.utils.presentation import PresentationGenerator
+from app.utils.file_manager import FileManager
+from app.utils.config import ConfigManager
 import os
-import time
-import random
-import threading as thread
 
-from bs4 import BeautifulSoup
-from pptx import Presentation
-from pptx.util import Inches, Pt
-
-session = requests.session()
-
-headers = requests.utils.default_headers()
-headers.update(
-    {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0',
-    }
-)
-
-def loadPage(url=""):
-    page = session.get(url, headers=headers)
-    return page.text
-
-def getLetra(html):
-    try:
-        sSoup = BeautifulSoup(html,'html.parser')
-        name = sSoup.find(class_="cnt-head_title").find('h1').get_text()
-        caixaLetra = sSoup.find(class_='cnt-letra')
-        estrofes = caixaLetra.findAll('p')
-        letras_br = []
-        for l in estrofes:  
-            letras_br.append(str(l).replace("<br>","\n").replace("<br/>","\n").replace("</br>","\n").replace("<p>","").replace("</p>","").split('\n')) 
-        return [letras_br,name]
-    except:
-        return ["erro","erro"]
-
-def createPptx(vector,name):
-    prs = Presentation()
-    left = top = width = height = Inches(1)
-    lyt=prs.slide_layouts[0] # choosing a slide layout
-    slide = prs.slides.add_slide(lyt) # adding a slide
-    title = slide.shapes.title # getTitle
-    title.text = name
-    lyt = prs.slide_layouts[6] # pegando slide em branco
-    for i in vector:
-        slide = prs.slides.add_slide(lyt)
-        Tbox = slide.shapes.add_textbox(left, top, width, height)
-        tframe = Tbox.text_frame
-        for x in i:
-            P = tframe.add_paragraph()
-            P.text = x
-            P.font.size = Pt(34)
-            pass
-    pass
-    fname = random.randint(0,8000)
-    file = open(str.format("public/pptx/{0}.pptx",str(fname)+"_"+str(name).replace(" ","_")),"wb")
-    prs.save(file)
-    file.close()
-    return ("pptx",str(fname)+"_"+str(name).replace(" ","_"))
-
-
-
-from flask import Flask,jsonify,render_template,request,redirect,send_file
 app = Flask('flaskapp', static_url_path='/', static_folder='public')
 
-def timer(fname):
-    minutos = 1
-    time.sleep(60*minutos)
-    print("Removido:",fname)
-    os.remove("public/pptx/{fname}.pptx".format(fname=fname))
+# Initialize components
+scraper = LyricsScraper()
+presentation_generator = PresentationGenerator()
+file_manager = FileManager()
+config_manager = ConfigManager()
 
-@app.route("/gen",methods=['POST'])
-def GenPptx():
-    dados = getLetra(loadPage(request.form['link']))
-    if(dados[0]=="erro"):
-        return redirect("/")
-    pptx = createPptx(dados[0],dados[1])
-    thread.Thread(target=timer,args=(pptx[1],)).start()
-    return redirect("pptx/{file}.pptx".format(file=pptx[1]))
+@app.route("/preview", methods=['POST'])
+def preview_lyrics():
+    try:
+        data = request.json
+        link = data.get('link')
+        config = data.get('config', {})
+        
+        if not link:
+            return jsonify({'error': 'Link não fornecido'}), 400
+            
+        # Get lyrics
+        html = scraper.load_page(link)
+        lyrics_data = scraper.get_lyrics(html)
+        
+        if not lyrics_data:
+            return jsonify({'error': 'Erro ao obter letra'}), 400
+        
+        # Validate config
+        sanitized_config = config_manager.validate_config(config)
+            
+        return jsonify({
+            'lyrics': lyrics_data,
+            'config': sanitized_config
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-@app.route("/",methods=['GET'])
+@app.route("/gen", methods=['POST'])
+def generate_pptx():
+    try:
+        # Get lyrics
+        link = request.form.get('link')
+        if not link:
+            return jsonify({'error': 'Link não fornecido'}), 400
+            
+        html = scraper.load_page(link)
+        lyrics_data = scraper.get_lyrics(html)
+        
+        if not lyrics_data:
+            return jsonify({'error': 'Erro ao obter letra'}), 400
+        
+        # Get and validate config
+        config = {
+            'fontSize': request.form.get('fontSize'),
+            'titleFontSize': request.form.get('titleFontSize'),
+            'titleSlideStyle': request.form.get('titleSlideStyle'),
+            'backgroundColor': request.form.get('backgroundColor'),
+            'textColor': request.form.get('textColor'),
+            'alignment': request.form.get('alignment'),
+            'verseSpacing': request.form.get('verseSpacing'),
+            'fontFamily': request.form.get('fontFamily'),
+            'transition': request.form.get('transition')
+        }
+        
+        sanitized_config = config_manager.validate_config(config)
+        
+        # Generate presentation
+        filename = presentation_generator.create_pptx(lyrics_data, sanitized_config)
+        
+        # Get the full file path
+        file_path = os.path.join('public', 'pptx', f'{filename}.pptx')
+        
+        # Send file directly in response
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f'{filename}.pptx',
+            mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        )
+        
+    except Exception as e:
+        print(f"Error generating presentation: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route("/config/options", methods=['GET'])
+def get_config_options():
+    """Get all available configuration options"""
+    return jsonify(config_manager.get_available_configs())
+
+@app.route("/", methods=['GET'])
 def index():
     return render_template('index.html')
 
 if __name__ == "__main__":
+    import os
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0',debug=False,port=port)
+    app.run(host='0.0.0.0', debug=False, port=port)
