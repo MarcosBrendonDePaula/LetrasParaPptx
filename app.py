@@ -56,15 +56,44 @@ def generate_pptx():
         
         # Get and validate config
         config = {
+            # Font settings
             'fontSize': request.form.get('fontSize'),
             'titleFontSize': request.form.get('titleFontSize'),
-            'titleSlideStyle': request.form.get('titleSlideStyle'),
+            'fontFamily': request.form.get('fontFamily'),
+            
+            # Theme settings
+            'theme': request.form.get('theme'),
+            'customTheme': {
+                'primary': request.form.get('customTheme.primary'),
+                'secondary': request.form.get('customTheme.secondary'),
+                'accent': request.form.get('customTheme.accent')
+            },
+            
+            # Color settings
             'backgroundColor': request.form.get('backgroundColor'),
             'textColor': request.form.get('textColor'),
+            
+            # Layout settings
             'alignment': request.form.get('alignment'),
             'verseSpacing': request.form.get('verseSpacing'),
-            'fontFamily': request.form.get('fontFamily'),
-            'transition': request.form.get('transition')
+            'slideMargins': {
+                'top': request.form.get('slideMargins.top'),
+                'right': request.form.get('slideMargins.right'),
+                'bottom': request.form.get('slideMargins.bottom'),
+                'left': request.form.get('slideMargins.left')
+            },
+            
+            # Header and Footer
+            'headerText': request.form.get('headerText'),
+            'footerText': request.form.get('footerText'),
+            'slideNumber': request.form.get('slideNumber') == 'on',
+            
+            # Slide settings
+            'titleSlideStyle': request.form.get('titleSlideStyle'),
+            'verseTransition': request.form.get('verseTransition'),
+            
+            # Optional background image
+            'imageBackground': request.files.get('imageBackground') if 'imageBackground' in request.files else None
         }
         
         sanitized_config = config_manager.validate_config(config)

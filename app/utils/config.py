@@ -3,34 +3,45 @@ class ConfigManager:
     def get_available_configs():
         """Get all available configuration options"""
         return {
-            'fontSize': {
+            # Theme settings
+            'theme': {
                 'type': 'select',
                 'options': [
-                    {'value': '28', 'label': 'Pequeno (28pt)'},
-                    {'value': '34', 'label': 'Médio (34pt)'},
-                    {'value': '40', 'label': 'Grande (40pt)'},
-                    {'value': '48', 'label': 'Extra Grande (48pt)'}
+                    {'value': 'default', 'label': 'Padrão'},
+                    {'value': 'dark', 'label': 'Escuro'},
+                    {'value': 'gradient', 'label': 'Gradiente'},
+                    {'value': 'custom', 'label': 'Personalizado'}
                 ],
-                'default': '34'
+                'default': 'default'
+            },
+            'customTheme': {
+                'type': 'object',
+                'properties': {
+                    'primary': {'type': 'color', 'default': '#007bff'},
+                    'secondary': {'type': 'color', 'default': '#6c757d'},
+                    'accent': {'type': 'color', 'default': '#28a745'}
+                }
+            },
+            
+            # Font settings
+            'fontSize': {
+                'type': 'number',
+                'min': 12,
+                'max': 72,
+                'default': 34
             },
             'titleFontSize': {
-                'type': 'select',
-                'options': [
-                    {'value': '44', 'label': 'Normal (44pt)'},
-                    {'value': '52', 'label': 'Grande (52pt)'},
-                    {'value': '60', 'label': 'Extra Grande (60pt)'}
-                ],
-                'default': '44'
+                'type': 'number',
+                'min': 16,
+                'max': 96,
+                'default': 44
             },
-            'titleSlideStyle': {
-                'type': 'select',
-                'options': [
-                    {'value': 'simple', 'label': 'Simples - Apenas Título'},
-                    {'value': 'withArtist', 'label': 'Com Nome do Artista'},
-                    {'value': 'full', 'label': 'Completo - Título, Artista e Data'}
-                ],
-                'default': 'simple'
+            'fontFamily': {
+                'type': 'text',
+                'default': 'Calibri'
             },
+            
+            # Color settings
             'backgroundColor': {
                 'type': 'color',
                 'default': '#FFFFFF'
@@ -39,6 +50,8 @@ class ConfigManager:
                 'type': 'color',
                 'default': '#000000'
             },
+            
+            # Layout settings
             'alignment': {
                 'type': 'select',
                 'options': [
@@ -50,33 +63,53 @@ class ConfigManager:
                 'default': 'center'
             },
             'verseSpacing': {
+                'type': 'number',
+                'min': 0.8,
+                'max': 3.0,
+                'step': 0.1,
+                'default': 1.0
+            },
+            'slideMargins': {
+                'type': 'object',
+                'properties': {
+                    'top': {'type': 'number', 'min': 0, 'max': 3, 'step': 0.1, 'default': 1},
+                    'right': {'type': 'number', 'min': 0, 'max': 3, 'step': 0.1, 'default': 1},
+                    'bottom': {'type': 'number', 'min': 0, 'max': 3, 'step': 0.1, 'default': 1},
+                    'left': {'type': 'number', 'min': 0, 'max': 3, 'step': 0.1, 'default': 1}
+                }
+            },
+            
+            # Header and Footer
+            'headerText': {
+                'type': 'text',
+                'default': ''
+            },
+            'footerText': {
+                'type': 'text',
+                'default': ''
+            },
+            'slideNumber': {
+                'type': 'boolean',
+                'default': True
+            },
+            
+            # Slide settings
+            'titleSlideStyle': {
                 'type': 'select',
                 'options': [
-                    {'value': 'compact', 'label': 'Compacto'},
-                    {'value': 'normal', 'label': 'Normal'},
-                    {'value': 'relaxed', 'label': 'Relaxado'},
-                    {'value': 'spacious', 'label': 'Espaçoso'}
+                    {'value': 'simple', 'label': 'Simples - Apenas Título'},
+                    {'value': 'withArtist', 'label': 'Com Nome do Artista'},
+                    {'value': 'full', 'label': 'Completo - Título, Artista e Data'}
                 ],
-                'default': 'normal'
+                'default': 'simple'
             },
-            'fontFamily': {
-                'type': 'select',
-                'options': [
-                    {'value': 'Calibri', 'label': 'Calibri'},
-                    {'value': 'Arial', 'label': 'Arial'},
-                    {'value': 'Times New Roman', 'label': 'Times New Roman'},
-                    {'value': 'Verdana', 'label': 'Verdana'},
-                    {'value': 'Tahoma', 'label': 'Tahoma'}
-                ],
-                'default': 'Calibri'
-            },
-            'transition': {
+            'verseTransition': {
                 'type': 'select',
                 'options': [
                     {'value': 'none', 'label': 'Nenhuma'},
                     {'value': 'fade', 'label': 'Desvanecer'},
-                    {'value': 'push', 'label': 'Empurrar'},
-                    {'value': 'wipe', 'label': 'Limpar'}
+                    {'value': 'slide', 'label': 'Deslizar'},
+                    {'value': 'zoom', 'label': 'Zoom'}
                 ],
                 'default': 'none'
             }
@@ -102,5 +135,51 @@ class ConfigManager:
                         sanitized_config[key] = value
                     else:
                         sanitized_config[key] = config_spec['default']
+                
+                elif config_spec['type'] == 'number':
+                    try:
+                        num_value = float(value)
+                        min_val = config_spec.get('min', float('-inf'))
+                        max_val = config_spec.get('max', float('inf'))
+                        if min_val <= num_value <= max_val:
+                            sanitized_config[key] = num_value
+                        else:
+                            sanitized_config[key] = config_spec['default']
+                    except (ValueError, TypeError):
+                        sanitized_config[key] = config_spec['default']
+                
+                elif config_spec['type'] == 'text':
+                    sanitized_config[key] = str(value) if value is not None else config_spec['default']
+                
+                elif config_spec['type'] == 'boolean':
+                    if isinstance(value, bool):
+                        sanitized_config[key] = value
+                    elif isinstance(value, str):
+                        sanitized_config[key] = value.lower() == 'true'
+                    else:
+                        sanitized_config[key] = config_spec['default']
+                
+                elif config_spec['type'] == 'object':
+                    sanitized_config[key] = {}
+                    for prop_name, prop_spec in config_spec['properties'].items():
+                        prop_value = value.get(prop_name) if isinstance(value, dict) else None
+                        
+                        if prop_spec['type'] == 'color':
+                            if isinstance(prop_value, str) and prop_value.startswith('#') and len(prop_value) == 7:
+                                sanitized_config[key][prop_name] = prop_value
+                            else:
+                                sanitized_config[key][prop_name] = prop_spec['default']
+                        
+                        elif prop_spec['type'] == 'number':
+                            try:
+                                num_value = float(prop_value)
+                                min_val = prop_spec.get('min', float('-inf'))
+                                max_val = prop_spec.get('max', float('inf'))
+                                if min_val <= num_value <= max_val:
+                                    sanitized_config[key][prop_name] = num_value
+                                else:
+                                    sanitized_config[key][prop_name] = prop_spec['default']
+                            except (ValueError, TypeError):
+                                sanitized_config[key][prop_name] = prop_spec['default']
 
         return sanitized_config
